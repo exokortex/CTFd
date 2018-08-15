@@ -343,7 +343,12 @@
 
 	$(document).ready(function () {
 		$('#media-insert').click(function (e) {
-			var tag = $('#media-icon').children()[0].nodeName.toLowerCase();
+			var tag = ''
+			try {
+				var tag = $('#media-icon').children()[0].nodeName.toLowerCase();
+			} catch(err) {
+				var tag = '';
+			}
 			var link = $('#media-link').val();
 			var fname = $('#media-filename').text();
 			if (tag == 'img') {
@@ -365,13 +370,6 @@
 			e.preventDefault();
 			$('#page-edit').attr('action', '{{ request.script_root }}/admin/pages?operation=save');
 			submit_form();
-		});
-
-		// Markdown Preview
-		$('#content-edit').on('shown.bs.tab', function (event) {
-			if (event.target.hash == '#content-preview') {
-				$(event.target.hash).html(marked(editor.getValue(), {'gfm': true, 'breaks': true}));
-			}
 		});
 
 		$('#media-button').click(function () {

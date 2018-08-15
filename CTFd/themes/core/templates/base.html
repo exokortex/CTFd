@@ -7,7 +7,8 @@
 		<link rel="shortcut icon" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/img/favicon.ico" type="image/x-icon">
 		<link rel="icon" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/img/favicon.ico" type="image/x-icon">
 		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/vendor/bootstrap.min.css">
-		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/vendor/fa-svg-with-js.css">
+		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/vendor/font-awesome/fontawesome-fonts.css" type='text/css'>
+		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/vendor/font-awesome/fontawesome-all.css" type='text/css'>
 		<link href='{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/vendor/font.css' rel='stylesheet' type='text/css'>
 		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/jumbotron.css">
 		<link rel="stylesheet" href="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/css/sticky-footer.css">
@@ -27,12 +28,19 @@
 		<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/nunjucks.min.js"></script>
 		<script type="text/javascript">
 				var script_root = "{{ request.script_root }}";
+				var csrf_nonce = "{{ nonce }}"
 		</script>
 </head>
 <body>
 	<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
 		<div class="container">
-			<a href="{{ request.script_root }}/" class="navbar-brand">{{ ctf_name() }}</a>
+			<a href="{{ request.script_root }}/" class="navbar-brand">
+				{% if ctf_logo() %}
+				<img class="img-responsive ctf_logo" src="{{ request.script_root }}/files/{{ ctf_logo() }}" height="25" alt="{{ ctf_name() }}">
+				{% else %}
+				{{ ctf_name() }}
+				{% endif %}
+			</a>
 			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#base-navbars"
 					aria-controls="base-navbars" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
@@ -121,9 +129,8 @@
 	</footer>
 
 	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/jquery.min.js"></script>
-	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/marked.min.js"></script>
+	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/markdown-it.min.js"></script>
 	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/bootstrap.bundle.min.js"></script>
-	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/vendor/fontawesome-all.min.js"></script>
 	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/style.js"></script>
 	<script src="{{ request.script_root }}/themes/{{ ctf_theme() }}/static/js/ezq.js"></script>
 	{% block scripts %}

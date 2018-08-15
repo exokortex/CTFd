@@ -73,6 +73,13 @@ class Config(object):
     MAILFROM_ADDR = "noreply@ctfd.io"
 
     '''
+    LOG_FOLDER is the location where logs are written
+    These are the logs for CTFd key submissions, registrations, and logins
+    The default location is the CTFd/logs folder
+    '''
+    LOG_FOLDER = os.environ.get('LOG_FOLDER') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+
+    '''
     UPLOAD_FOLDER is the location where files are uploaded.
     The default destination is the CTFd/uploads folder. If you need Amazon S3 files
     you can use the CTFd S3 plugin: https://github.com/ColdHeat/CTFd-S3-plugin

@@ -96,6 +96,11 @@ def test_admins_can_access_challenges_before_ctftime():
 
         with freeze_time("2017-10-2"):
             client = login_as_user(app, name='admin', password='password')
+
+            r = client.get('/challenges')
+            assert r.status_code == 200
+            assert "has not started" in r.get_data(as_text=True)
+
             r = client.get('/chals')
             assert r.status_code == 200
 
@@ -202,6 +207,31 @@ def test_admins_can_delete_challenges():
     destroy_ctfd(app)
 
 
+def test_admins_can_delete_challenges_with_extras():
+    """Test that admins can delete challenges that have a hint"""
+    app = create_ctfd()
+    with app.app_context():
+        client = login_as_user(app, name="admin", password="password")
+
+        chal = gen_challenge(app.db)
+        chal_id = chal.id
+
+        hint = gen_hint(app.db, chal_id)
+
+        assert Challenges.query.count() == 1
+
+        with client.session_transaction() as sess:
+            data = {
+                'id': chal_id,
+                'nonce': sess.get('nonce'),
+            }
+            r = client.post('/admin/chal/delete', data=data)
+            assert r.get_data(as_text=True) == '1'
+
+        assert Challenges.query.count() == 0
+    destroy_ctfd(app)
+
+
 def test_admin_chal_detail_returns_proper_data():
     """Test that the /admin/chals/<int:chalid> endpoint returns the proper data"""
     app = create_ctfd()
@@ -240,6 +270,24 @@ def test_admin_chal_detail_returns_proper_data():
         response = json.loads(r.get_data(as_text=True))
 
         assert data == response
+
+    destroy_ctfd(app)
+
+
+def test_admin_load_chal_solves():
+    app = create_ctfd()
+    with app.app_context():
+        client = login_as_user(app, name="admin", password="password")
+
+        chal1 = gen_challenge(app.db)
+        flag1 = gen_flag(app.db, chal=chal1.id, flag='flag')
+        chal1_id = chal1.id
+
+        gen_solve(app.db, teamid=1, chalid=chal1_id)
+
+        r = client.get('/admin/chal/1/solves')
+        data = r.get_data(as_text=True)
+        assert json.loads(data)
 
     destroy_ctfd(app)
 

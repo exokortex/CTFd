@@ -2,6 +2,8 @@ var challenges;
 var user_solves = [];
 var templates = {};
 
+window.challenge = new Object();
+
 function loadchal(id) {
     var obj = $.grep(challenges['game'], function (e) {
         return e.id == id;
@@ -19,29 +21,28 @@ function loadchalbyname(chalname) {
 }
 
 function updateChalWindow(obj) {
-    $.get(script_root + obj.template, function(template_data){
-        $('#chal-window').empty();
-        var template = nunjucks.compile(template_data);
-        var solves = obj.solves == 1 ? " Solve" : " Solves";
-        var solves = obj.solves + solves;
+    $.get(script_root + "/chals/" + obj.id, function(challenge_data){
+        $.getScript(script_root + obj.script, function(){
+            $.get(script_root + obj.template, function (template_data) {
+                $('#chal-window').empty();
 
-        var nonce = $('#nonce').val();
-        var wrapper  = {
-            id: obj.id,
-            name: obj.name,
-            value: obj.value,
-            tags: obj.tags,
-            desc: obj.description,
-            solves: solves,
-            files: obj.files,
-            hints: obj.hints,
-            script_root: script_root
-        };
+                var template = nunjucks.compile(template_data);
 
-        $('#chal-window').append(template.render(wrapper));
-        $.getScript(script_root + obj.script,
-            function() {
-                // Handle Solves tab
+                var solves = obj.solves == 1 ? " Solve" : " Solves";
+                var solves = obj.solves + solves;
+
+                var nonce = $('#nonce').val();
+
+                window.challenge.data = challenge_data;
+
+                window.challenge.preRender();
+
+                challenge_data['description'] = window.challenge.render(challenge_data['description']);
+                challenge_data['script_root'] = script_root;
+                challenge_data['solves'] = solves;
+
+                $('#chal-window').append(template.render(challenge_data));
+
                 $('.chal-solves').click(function (e) {
                     getsolves($('#chal-id').val())
                 });
@@ -60,12 +61,40 @@ function updateChalWindow(obj) {
                     $("#too-fast").slideUp();
                 });
 
-                // $('pre code').each(function(i, block) {
-                //     hljs.highlightBlock(block);
-                // });
+                $('#submit-key').click(function (e) {
+                    e.preventDefault();
+                    $('#submit-key').addClass("disabled-button");
+                    $('#submit-key').prop('disabled', true);
+                    window.challenge.submit(function (data) {
+                        renderSubmissionResponse(data)
+                    });
+                });
+
+                $("#answer-input").keyup(function (event) {
+                    if (event.keyCode == 13) {
+                        $("#submit-key").click();
+                    }
+                });
+
+                $(".input-field").bind({
+                    focus: function () {
+                        $(this).parent().addClass('input--filled');
+                        $label = $(this).siblings(".input-label");
+                    },
+                    blur: function () {
+                        if ($(this).val() === '') {
+                            $(this).parent().removeClass('input--filled');
+                            $label = $(this).siblings(".input-label");
+                            $label.removeClass('input--hide');
+                        }
+                    }
+                });
+
+                window.challenge.postRender();
 
                 window.location.replace(window.location.href.split('#')[0] + '#' + obj.name);
                 $('#chal-window').modal();
+            });
         });
     });
 }
@@ -77,72 +106,65 @@ $("#answer-input").keyup(function(event){
 });
 
 
-function submitkey(chal, key, nonce, cb) {
-    $('#submit-key').addClass("disabled-button");
-    $('#submit-key').prop('disabled', true);
-    $.post(script_root + "/chal/" + chal, {
-        key: key,
-        nonce: nonce
-    }, function (data) {
-        var result = $.parseJSON(JSON.stringify(data));
+function renderSubmissionResponse(data, cb){
+    var result = $.parseJSON(JSON.stringify(data));
 
-        var result_message = $('#result-message');
-        var result_notification = $('#result-notification');
-        var answer_input = $("#answer-input");
-        result_notification.removeClass();
-        result_message.text(result.message);
+    var result_message = $('#result-message');
+    var result_notification = $('#result-notification');
+    var answer_input = $("#answer-input");
+    result_notification.removeClass();
+    result_message.text(result.message);
 
-        if (result.status == -1){
-          window.location = script_root + "/login?next=" + script_root + window.location.pathname + window.location.hash
-          return
-        }
-        else if (result.status == 0){ // Incorrect key
-            result_notification.addClass('alert alert-danger alert-dismissable text-center');
-            result_notification.slideDown();
+    if (result.status == -1) {
+        window.location = script_root + "/login?next=" + script_root + window.location.pathname + window.location.hash
+        return
+    }
+    else if (result.status == 0) { // Incorrect key
+        result_notification.addClass('alert alert-danger alert-dismissable text-center');
+        result_notification.slideDown();
 
-            answer_input.removeClass("correct");
-            answer_input.addClass("wrong");
-            setTimeout(function () {
-                answer_input.removeClass("wrong");
-            }, 3000);
-        }
-        else if (result.status == 1){ // Challenge Solved
-            result_notification.addClass('alert alert-success alert-dismissable text-center');
-            result_notification.slideDown();
-
-            $('.chal-solves').text((parseInt($('.chal-solves').text().split(" ")[0]) + 1 +  " Solves") );
-
-            answer_input.val("");
+        answer_input.removeClass("correct");
+        answer_input.addClass("wrong");
+        setTimeout(function () {
             answer_input.removeClass("wrong");
-            answer_input.addClass("correct");
-        }
-        else if (result.status == 2){ // Challenge already solved
-            result_notification.addClass('alert alert-info alert-dismissable text-center');
-            result_notification.slideDown();
-
-            answer_input.addClass("correct");
-        }
-        else if (result.status == 3){ // Keys per minute too high
-            result_notification.addClass('alert alert-warning alert-dismissable text-center');
-            result_notification.slideDown();
-
-            answer_input.addClass("too-fast");
-            setTimeout(function() {
-                answer_input.removeClass("too-fast");
-            }, 3000);
-        }
-        marksolves();
-        updatesolves();
-        setTimeout(function(){
-          $('.alert').slideUp();
-          $('#submit-key').removeClass("disabled-button");
-          $('#submit-key').prop('disabled', false);
         }, 3000);
+    }
+    else if (result.status == 1) { // Challenge Solved
+        result_notification.addClass('alert alert-success alert-dismissable text-center');
+        result_notification.slideDown();
 
-        if (cb) {
-            cb(result);
-        }
-    })
+        $('.chal-solves').text((parseInt($('.chal-solves').text().split(" ")[0]) + 1 + " Solves"));
+
+        answer_input.val("");
+        answer_input.removeClass("wrong");
+        answer_input.addClass("correct");
+    }
+    else if (result.status == 2) { // Challenge already solved
+        result_notification.addClass('alert alert-info alert-dismissable text-center');
+        result_notification.slideDown();
+
+        answer_input.addClass("correct");
+    }
+    else if (result.status == 3) { // Keys per minute too high
+        result_notification.addClass('alert alert-warning alert-dismissable text-center');
+        result_notification.slideDown();
+
+        answer_input.addClass("too-fast");
+        setTimeout(function () {
+            answer_input.removeClass("too-fast");
+        }, 3000);
+    }
+    marksolves();
+    updatesolves();
+    setTimeout(function () {
+        $('.alert').slideUp();
+        $('#submit-key').removeClass("disabled-button");
+        $('#submit-key').prop('disabled', false);
+    }, 3000);
+
+    if (cb) {
+        cb(result);
+    }
 }
 
 function marksolves(cb) {
@@ -282,6 +304,9 @@ function loadchals(cb) {
 }
 
 function loadhint(hintid){
+    var md = window.markdownit({
+        html: true,
+    });
     ezq({
         title: "Unlock Hint?",
         body: "Are you sure you want to open this hint?",
@@ -294,9 +319,10 @@ function loadhint(hintid){
                         button: "Okay"
                     });
                 } else {
+
                     ezal({
                         title: "Hint",
-                        body: marked(data.hint, {'gfm': true, 'breaks': true}),
+                        body: md.render(data.hint),
                         button: "Got it!"
                     });
                 }
@@ -336,7 +362,7 @@ $.extend({
 
 var load_location_hash = function () {
     if (window.location.hash.length > 0) {
-        loadchalbyname(window.location.hash.substring(1));
+        loadchalbyname(decodeURIComponent(window.location.hash.substring(1)));
     }
 };
 

@@ -63,19 +63,14 @@ def test_base64encode():
     if six.PY2:
         assert base64encode('abc123') == 'YWJjMTIz'
         assert base64encode(unicode('abc123')) == 'YWJjMTIz'
-        assert base64encode(unicode('"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'), urlencode=True) == 'InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D'
-        assert base64encode('user+user@ctfd.io') == 'dXNlcit1c2VyQGN0ZmQuaW8='
-        assert base64encode('user+user@ctfd.io', urlencode=True) == 'dXNlcit1c2VyQGN0ZmQuaW8%3D'
-        assert base64encode('😆') == '8J-Yhg=='
-        assert base64encode('😆', urlencode=True) == '8J-Yhg%3D%3D'
+        assert base64encode(unicode('"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4')) == 'InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ'
+        assert base64encode('user+user@ctfd.io') == 'dXNlcit1c2VyQGN0ZmQuaW8'
+        assert base64encode('😆') == '8J-Yhg'
     else:
         assert base64encode('abc123') == 'YWJjMTIz'
-        assert base64encode('abc123') == 'YWJjMTIz'
-        assert base64encode('"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4', urlencode=True) == 'InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D'
-        assert base64encode('user+user@ctfd.io') == 'dXNlcit1c2VyQGN0ZmQuaW8='
-        assert base64encode('user+user@ctfd.io', urlencode=True) == 'dXNlcit1c2VyQGN0ZmQuaW8%3D'
-        assert base64encode('😆') == '8J-Yhg=='
-        assert base64encode('😆', urlencode=True) == '8J-Yhg%3D%3D'
+        assert base64encode('"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4') == 'InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ'
+        assert base64encode('user+user@ctfd.io') == 'dXNlcit1c2VyQGN0ZmQuaW8'
+        assert base64encode('😆') == '8J-Yhg'
 
 
 def test_base64decode():
@@ -83,17 +78,13 @@ def test_base64decode():
     if six.PY2:
         assert base64decode('YWJjMTIz') == 'abc123'
         assert base64decode(unicode('YWJjMTIz')) == 'abc123'
-        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D'), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
-        assert base64decode('8J-Yhg==') == '😆'
-        assert base64decode('8J-Yhg%3D%3D', urldecode=True) == '😆'
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ')) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert base64decode('8J-Yhg') == '😆'
     else:
         assert base64decode('YWJjMTIz') == 'abc123'
-        assert base64decode('YWJjMTIz') == 'abc123'
-        assert base64decode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D', urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
-        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8=') == 'user+user@ctfd.io'
-        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8%3D', urldecode=True) == 'user+user@ctfd.io'
-        assert base64decode('8J-Yhg==') == '😆'
-        assert base64decode('8J-Yhg%3D%3D', urldecode=True) == '😆'
+        assert base64decode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ') == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8') == 'user+user@ctfd.io'
+        assert base64decode('8J-Yhg') == '😆'
 
 
 def test_override_template():
@@ -251,7 +242,7 @@ def test_verify_email(mock_smtp):
         # This is currently not actually validated
         msg = ("Please click the following link to confirm"
                " your email address for CTFd:"
-               " http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENHczWTJCVVJwdWc%3D")
+               " http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENHczWTJCVVJwdWc")
 
         ctf_name = get_config('ctf_name')
         email_msg = MIMEText(msg)
@@ -276,7 +267,7 @@ def test_ctftime_prevents_accessing_challenges_before_ctf():
         chal_id = chal.id
         flag = gen_flag(app.db, chal=chal.id, flag=u'flag')
 
-        with freeze_time("2017-10-3"):
+        with freeze_time("2017-10-3"):  # CTF has not started yet.
             client = login_as_user(app)
             r = client.get('/chals')
             assert r.status_code == 403
@@ -288,8 +279,7 @@ def test_ctftime_prevents_accessing_challenges_before_ctf():
                 }
             r = client.post('/chal/{}'.format(chal_id), data=data)
             data = r.get_data(as_text=True)
-            data = json.loads(data)
-            assert data['status'] == -1
+            assert r.status_code == 403
         solve_count = app.db.session.query(app.db.func.count(Solves.id)).first()[0]
         assert solve_count == 0
     destroy_ctfd(app)

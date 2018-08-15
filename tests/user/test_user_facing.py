@@ -20,6 +20,18 @@ def test_index():
     destroy_ctfd(app)
 
 
+def test_not_found():
+    """Should return a 404 for pages that are not found"""
+    app = create_ctfd()
+    with app.app_context():
+        with app.test_client() as client:
+            r = client.get('/this-should-404')
+            assert r.status_code == 404
+            r = client.post('/this-should-404')
+            assert r.status_code == 404
+    destroy_ctfd(app)
+
+
 def test_page():
     """Test that users can access pages that are created in the database"""
     app = create_ctfd()
@@ -223,7 +235,7 @@ def test_user_get_solves_per_chal():
     destroy_ctfd(app)
 
 
-def test_user_get_solves():
+def test_user_get_private_solves():
     """Can a registered user load /solves"""
     app = create_ctfd()
     with app.app_context():
@@ -234,13 +246,79 @@ def test_user_get_solves():
     destroy_ctfd(app)
 
 
-def test_user_get_team_page():
+def test_user_get_public_solves():
+    """Can a registered user load /solves/2"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/solves/2')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_another_public_solves():
+    """Can a registered user load public solves page of another user"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/solves/1')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_private_fails():
+    """Can a registered user load /fails"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/solves')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_public_fails():
+    """Can a registered user load /fails/2"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/fails/2')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_another_public_fails():
+    """Can a registered user load public fails page of another user"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/fails/1')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_public_team_page():
     """Can a registered user load their public profile (/team/2)"""
     app = create_ctfd()
     with app.app_context():
         register_user(app)
         client = login_as_user(app)
         r = client.get('/team/2')
+        assert r.status_code == 200
+    destroy_ctfd(app)
+
+
+def test_user_get_another_public_team_page():
+    """Can a registered user load the public profile of another user (/team/1)"""
+    app = create_ctfd()
+    with app.app_context():
+        register_user(app)
+        client = login_as_user(app)
+        r = client.get('/team/1')
         assert r.status_code == 200
     destroy_ctfd(app)
 
@@ -304,7 +382,7 @@ def test_user_get_logout():
         client = login_as_user(app)
         client.get('/logout', follow_redirects=True)
         r = client.get('/challenges')
-        assert r.location == "http://localhost/login?next=challenges"
+        assert r.location == "http://localhost/login?next=%2Fchallenges"
         assert r.status_code == 302
     destroy_ctfd(app)
 
@@ -317,73 +395,6 @@ def test_user_get_reset_password():
         client = app.test_client()
         r = client.get('/reset_password')
         assert r.status_code == 200
-    destroy_ctfd(app)
-
-
-def test_scoring_logic():
-    """Test that scoring logic is correct"""
-    app = create_ctfd()
-    with app.app_context():
-        admin = login_as_user(app, name="admin", password="password")
-
-        register_user(app, name="user1", email="user1@ctfd.io", password="password")
-        client1 = login_as_user(app, name="user1", password="password")
-        register_user(app, name="user2", email="user2@ctfd.io", password="password")
-        client2 = login_as_user(app, name="user2", password="password")
-
-        chal1 = gen_challenge(app.db)
-        flag1 = gen_flag(app.db, chal=chal1.id, flag='flag')
-        chal1_id = chal1.id
-
-        chal2 = gen_challenge(app.db)
-        flag2 = gen_flag(app.db, chal=chal2.id, flag='flag')
-        chal2_id = chal2.id
-
-        # user1 solves chal1
-        with freeze_time("2017-10-3 03:21:34"):
-            with client1.session_transaction() as sess:
-                data = {
-                    "key": 'flag',
-                    "nonce": sess.get('nonce')
-                }
-                r = client1.post('/chal/{}'.format(chal1_id), data=data)
-
-        # user1 is now on top
-        scores = get_scores(admin)
-        assert scores[0]['team'] == 'user1'
-
-        # user2 solves chal1 and chal2
-        with freeze_time("2017-10-4 03:30:34"):
-            with client2.session_transaction() as sess:
-                # solve chal1
-                data = {
-                    "key": 'flag',
-                    "nonce": sess.get('nonce')
-                }
-                r = client2.post('/chal/{}'.format(chal1_id), data=data)
-                # solve chal2
-                data = {
-                    "key": 'flag',
-                    "nonce": sess.get('nonce')
-                }
-                r = client2.post('/chal/{}'.format(chal2_id), data=data)
-
-        # user2 is now on top
-        scores = get_scores(admin)
-        assert scores[0]['team'] == 'user2'
-
-        # user1 solves chal2
-        with freeze_time("2017-10-5 03:50:34"):
-            with client1.session_transaction() as sess:
-                data = {
-                    "key": 'flag',
-                    "nonce": sess.get('nonce')
-                }
-                r = client1.post('/chal/{}'.format(chal2_id), data=data)
-
-        # user2 should still be on top because they solved chal2 first
-        scores = get_scores(admin)
-        assert scores[0]['team'] == 'user2'
     destroy_ctfd(app)
 
 
@@ -568,7 +579,7 @@ def test_user_can_confirm_email(mock_smtp):
             assert r.location == "http://localhost/confirm"  # We got redirected to /confirm
 
             # Use precalculated confirmation secret
-            r = client.get('http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENHczWTJCVVJwdWc%3D')
+            r = client.get('http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENHczWTJCVVJwdWc')
             assert r.location == 'http://localhost/challenges'
 
             # The team is now verified
@@ -690,5 +701,9 @@ def test_workshop_mode():
         ''')
         received = json.loads(output)
         assert saved == received
+
+        r = client.get('/team')
+        output = r.get_data(as_text=True)
+        assert "1st <small>place</small>" not in output
 
     destroy_ctfd(app)
