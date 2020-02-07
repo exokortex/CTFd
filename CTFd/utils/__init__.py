@@ -1,26 +1,11 @@
 import mistune
 import six
-from flask import current_app as app, request, redirect, url_for, session, render_template, abort, jsonify
+from flask import current_app as app
 from CTFd.cache import cache
-from CTFd.models import (
-    db,
-    Challenges,
-    Fails,
-    Pages,
-    Configs,
-    Tracking,
-    Teams,
-    Files
-)
-
-try:
-    import pathlib
-except ImportError:
-    import pathlib2 as pathlib
 
 if six.PY2:
-    string_types = (str, unicode)
-    text_type = unicode
+    string_types = (str, unicode)  # noqa: F821
+    text_type = unicode  # noqa: F821
     binary_type = str
 else:
     string_types = (str,)
@@ -43,17 +28,20 @@ def _get_config(key):
         if value and value.isdigit():
             return int(value)
         elif value and isinstance(value, six.string_types):
-            if value.lower() == 'true':
+            if value.lower() == "true":
                 return True
-            elif value.lower() == 'false':
+            elif value.lower() == "false":
                 return False
             else:
                 return value
+    # Flask-Caching is unable to roundtrip a value of None.
+    # Return an exception so that we can still cache and avoid the db hit
+    return KeyError
 
 
 def get_config(key, default=None):
     value = _get_config(key)
-    if value is None:
+    if value is KeyError:
         return default
     else:
         return value
@@ -69,3 +57,6 @@ def set_config(key, value):
     db.session.commit()
     cache.delete_memoized(_get_config, key)
     return config
+
+
+from CTFd.models import db, Configs  # noqa: E402

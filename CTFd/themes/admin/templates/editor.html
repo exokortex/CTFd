@@ -1,13 +1,7 @@
 {% extends "admin/base.html" %}
 
 {% block stylesheets %}
-	<link rel="stylesheet" type="text/css" href="
-			{{ url_for('views.themes', theme='admin', path='css/vendor/codemirror.min.css') }}">
-	<style>
-	.CodeMirror-gutters {
-		min-height: 100% !important;;
-	}
-	</style>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('views.themes', theme='admin', path='css/codemirror.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -30,9 +24,9 @@
 				<div class="modal-header">
 					<div class="container">
 						<div class="row mh-100">
-							<div class="col-md-8" id="media-library-list">
+							<div class="col-md-6" id="media-library-list">
 							</div>
-							<div class="col-md-4">
+							<div class="col-md-6" id="media-library-details">
 								<h4 class="text-center">Media Details</h4>
 								<div id="media-item">
 									<div class="text-center" id="media-icon">
@@ -46,7 +40,29 @@
 									</div>
 
 									<div class="form-group text-center">
-										<button class="btn btn-success w-100" id="media-insert">Insert</button>
+										<div class="row">
+											<div class="col-md-6">
+												<button class="btn btn-success w-100" id="media-insert"
+														data-toggle="tooltip" data-placement="top"
+														title="Insert link into editor">
+													Insert
+												</button>
+											</div>
+											<div class="col-md-3">
+												<button class="btn btn-primary w-100" id="media-download"
+														data-toggle="tooltip" data-placement="top"
+														title="Download file">
+													<i class="fas fa-download"></i>
+												</button>
+											</div>
+											<div class="col-md-3">
+												<button class="btn btn-danger w-100" id="media-delete"
+														data-toggle="tooltip" data-placement="top"
+														title="Delete file">
+													<i class="far fa-trash-alt"></i>
+												</button>
+											</div>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -68,7 +84,7 @@
 			</div>
 			<div class="modal-footer">
 				<div class="float-right">
-					<button type="submit" class="btn btn-primary" onclick="upload_media()">Upload</button>
+					<button type="submit" class="btn btn-primary media-upload-button">Upload</button>
 				</div>
 			</div>
 		</div>
@@ -128,7 +144,7 @@
 								   data-toggle="tab">Write</a>
 							</li>
 							<li class="nav-item" role="presentation">
-								<a class="nav-link" onclick="preview_page(); return true;" href="#">Preview</a>
+								<a class="nav-link preview-page" href="#">Preview</a>
 							</li>
 						</ul>
 
@@ -151,7 +167,7 @@
 									<div class="form-group pr-3">
 										Draft:
 										{% set draft = page is defined and page.draft == True %}
-										<select name="draft">
+										<select class="form-control custom-select" name="draft">
 											<option value="true" {% if draft == True %}selected{% endif %}>
 												True
 											</option>
@@ -164,7 +180,7 @@
 									<div class="form-group pr-3">
 										Hidden:
 										{% set hidden = page is defined and page.hidden == True %}
-										<select name="hidden">
+										<select class="form-control custom-select" name="hidden">
 											<option value="true" {% if hidden == True %}selected{% endif %}>True
 											</option>
 											<option value="false" {% if hidden == False %}selected{% endif %}>False
@@ -175,7 +191,7 @@
 									<div class="form-group pr-3">
 										Authentication Required:
 										{% set auth_required = page is defined and page.auth_required == True %}
-										<select name="auth_required">
+										<select class="form-control custom-select" name="auth_required">
 											<option value="true" {% if auth_required == True %}selected{% endif %}>
 												True
 											</option>
@@ -219,9 +235,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('views.themes', theme='admin', path='js/utils.js') }}"></script>
-<script src="{{ url_for('views.themes', theme='admin', path='js/vendor/codemirror.min.js') }}"></script>
-<script src="{{ url_for('views.themes', theme='admin', path='js/files/files.js') }}"></script>
-<script src="{{ url_for('views.themes', theme='admin', path='js/pages/media.js') }}"></script>
-<script src="{{ url_for('views.themes', theme='admin', path='js/pages/editor.js') }}"></script>
+{% endblock %}
+
+{% block entrypoint %}
+	<script defer src="{{ url_for('views.themes', theme='admin', path='js/pages/editor.js') }}"></script>
 {% endblock %}

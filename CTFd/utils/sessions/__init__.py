@@ -1,10 +1,11 @@
 from flask.sessions import SessionInterface, SessionMixin
 from flask.json.tag import TaggedJSONSerializer
 from werkzeug.datastructures import CallbackDict
+from itsdangerous import BadSignature, want_bytes
 from CTFd.cache import cache
 from CTFd.utils import text_type
+from CTFd.utils.security.signing import sign, unsign
 from uuid import uuid4
-from itsdangerous import Signer, BadSignature, want_bytes
 import six
 
 
@@ -51,7 +52,7 @@ class CachingSessionInterface(SessionInterface):
     def _generate_sid(self):
         return str(uuid4())
 
-    def __init__(self, key_prefix, use_signer=False, permanent=False):
+    def __init__(self, key_prefix, use_signer=True, permanent=False):
         self.key_prefix = key_prefix
         self.use_signer = use_signer
         self.permanent = permanent
@@ -62,14 +63,22 @@ class CachingSessionInterface(SessionInterface):
             sid = self._generate_sid()
             return self.session_class(sid=sid, permanent=self.permanent)
 
+        if self.use_signer:
+            try:
+                sid_as_bytes = unsign(sid)
+                sid = sid_as_bytes.decode()
+            except BadSignature:
+                sid = self._generate_sid()
+                return self.session_class(sid=sid, permanent=self.permanent)
+
         if not six.PY2 and not isinstance(sid, text_type):
-            sid = sid.decode('utf-8', 'strict')
+            sid = sid.decode("utf-8", "strict")
         val = cache.get(self.key_prefix + sid)
         if val is not None:
             try:
                 data = self.serializer.loads(val)
                 return self.session_class(data, sid=sid)
-            except Exception as e:
+            except Exception:
                 return self.session_class(sid=sid, permanent=self.permanent)
         return self.session_class(sid=sid, permanent=self.permanent)
 
@@ -80,8 +89,9 @@ class CachingSessionInterface(SessionInterface):
         if not session:
             if session.modified:
                 cache.delete(self.key_prefix + session.sid)
-                response.delete_cookie(app.session_cookie_name,
-                                       domain=domain, path=path)
+                response.delete_cookie(
+                    app.session_cookie_name, domain=domain, path=path
+                )
             return
 
         if session.modified:
@@ -94,8 +104,17 @@ class CachingSessionInterface(SessionInterface):
             if session.sid is None:
                 session.sid = self._generate_sid()
 
-            cache.set(key=self.key_prefix + session.sid, value=val, timeout=total_seconds(app.permanent_session_lifetime))
-            session_id = session.sid
+            cache.set(
+                key=self.key_prefix + session.sid,
+                value=val,
+                timeout=total_seconds(app.permanent_session_lifetime),
+            )
+
+            if self.use_signer:
+                session_id = sign(want_bytes(session.sid))
+            else:
+                session_id = session.sid
+
             response.set_cookie(
                 app.session_cookie_name,
                 session_id,
@@ -104,5 +123,5 @@ class CachingSessionInterface(SessionInterface):
                 domain=domain,
                 path=path,
                 secure=secure,
-                samesite=samesite
+                samesite=samesite,
             )
